@@ -9,11 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+##Taller 1
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r cars}
 load.lib <- c('data.table', 'plyr', 'doBy', 'outreg', 'margins', 'ggplot2', 
@@ -34,9 +32,7 @@ print("Librerías cargadas")
 
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
+## Scrapping
 
 
 ```{r pressure, echo=FALSE}
@@ -61,33 +57,69 @@ head(datos_totales)
 
 ```
 
+##limpieza
+
+
 ```{r pressure, echo=FALSE}
+datos_totales <- as_tibble(datos_totales)
+
+na_ingtot <- sum(is.na(datos_totales$ingtot))
+na_age <- sum(is.na(datos_totales$age))
+na_sex <- sum(is.na(datos_totales$sex))
+na_totalHoursWorked <- sum(is.na(datos_totales$totalHoursWorked))
+na_y_salary_m_hu <- sum(is.na(datos_totales$y_salary_m_hu))
 
 
+# Crear un dataframe con los resultados
+na_counts <- data.frame(
+  Variable = c("ingtot", "age", "sex", "totalHoursWorked","y_salary_m_hu"),
+  NAs = c(na_ingtot, na_age, na_sex, na_totalHoursWorked, na_y_salary_m_hu)
+)
 
+# Mostrar los resultados ordenados por cantidad de NA
+na_counts <- na_counts %>% arrange(desc(NAs))
+print(na_counts)
 
 ```
 
 
 ```{r pressure, echo=FALSE}
-
-
-
-
-```
-
-```{r pressure, echo=FALSE}
-
-
+#Primer limpieza de datos enfocada en los NA
+datos_filtrados <- datos_totales %>% filter(age >= 18, ingtot > 0, totalHoursWorked > 0, y_salary_m_hu > 0)
+skim(datos_filtrados) %>% head()
 
 
 ```
 
 ```{r pressure, echo=FALSE}
 
+na_ingtot <- sum(is.na(datos_filtrados$ingtot))
+na_age <- sum(is.na(datos_filtrados$age))
+na_sex <- sum(is.na(datos_filtrados$sex))
+na_totalHoursWorked <- sum(is.na(datos_filtrados$totalHoursWorked))
+na_y_salary_m_hu <- sum(is.na(datos_filtrados$y_salary_m_hu))
 
 
+# Crear un dataframe con los resultados
+na_counts <- data.frame(
+  Variable = c("ingtot", "age", "sex", "totalHoursWorked","y_salary_m_hu"),
+  NAs = c(na_ingtot, na_age, na_sex, na_totalHoursWorked, na_y_salary_m_hu)
+)
+
+# Mostrar los resultados ordenados por cantidad de NA
+na_counts <- na_counts %>% arrange(desc(NAs))
+print(na_counts)
 
 ```
+##Filtrado Valores atipicos
+```{r pressure, echo=FALSE}
+# Boxplot de totalHoursWorked
+ggplot(datos_filtrados, aes(y = totalHoursWorked)) +
+  geom_boxplot() +
+  labs(title = "Boxplot de Horas Trabajadas", y = "Horas Trabajadas")
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Boxplot de y_salary_m_hu
+ggplot(datos_filtrados, aes(y = log(y_salary_m_hu))) +
+  geom_boxplot() +
+  labs(title = "Boxplot de Salario por Hora (Logaritmo Natural)", y = "ln(Salario por Hora)")
+```
