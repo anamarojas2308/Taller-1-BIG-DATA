@@ -1,0 +1,93 @@
+---
+title: "Primer Taller big data"
+author: "Julian Delgado Gutierrez"
+date: "2025-02-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+load.lib <- c('data.table', 'plyr', 'doBy', 'outreg', 'margins', 'ggplot2', 
+              'stargazer', 'tidyverse', 'dplyr', 'lubridate', 'ggthemes', 
+              'plotly', 'haven', 'devtools', 'openxlsx', 'ggTimeSeries', 
+              'gganimate', 'gifski', 'ggiraph', 'sf', 'stringr', 
+              'rvest', 'rebus', 'purrr', 'tidytext', 'syuzhet', 
+              'tokenizers', 'tm', 'wordcloud', 'cluster', 
+              'topicmodels', 'SnowballC', 'pacman', 'skimr',
+              'rio', 'gridExtra', 'corrplot', 'MASS','RSelenium','rvest','wdman')
+
+install.lib <- load.lib[!load.lib %in% installed.packages()]
+for(lib in install.lib) install.packages(lib) # ,dependencies=TRUE
+sapply(load.lib, require, character = TRUE)
+
+print("Librerías cargadas")
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+
+```{r pressure, echo=FALSE}
+url_base <- "https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_"
+
+# Leer la primera página con nombres de columna
+pagina <- read_html(paste0(url_base, "1.html"))
+datos_totales <- pagina %>% html_table(fill = TRUE) %>% .[[1]]
+
+# Iterar sobre las páginas 2 a 10 sin incluir los nombres de columna repetidos
+for (i in 2:10) {
+  url <- paste0(url_base, i, ".html")
+  pagina <- read_html(url)
+  tabla <- pagina %>% html_table(fill = TRUE) %>% .[[1]]
+  
+  # Unir los datos sin incluir la primera fila de la tabla (cabecera repetida)
+  datos_totales <- bind_rows(datos_totales, tabla)
+}
+
+# Ver los primeros registros
+head(datos_totales)
+
+```
+
+```{r pressure, echo=FALSE}
+
+
+
+
+```
+
+
+```{r pressure, echo=FALSE}
+
+
+
+
+```
+
+```{r pressure, echo=FALSE}
+
+
+
+
+```
+
+```{r pressure, echo=FALSE}
+
+
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
