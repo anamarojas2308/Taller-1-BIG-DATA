@@ -1,7 +1,7 @@
 ---
 title: "Primer Taller big data"
 author: "Julian Delgado Gutierrez"
-date: "2025-02-02"
+date: "2025-02-16"
 output: html_document
 ---
 
@@ -9,11 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-##Taller 1
+```{r setup, include=FALSE}
+rm(list = ls())
 
-
-
-```{r cars}
 load.lib <- c('data.table', 'plyr', 'doBy', 'outreg', 'margins', 'ggplot2', 
               'stargazer', 'tidyverse', 'dplyr', 'lubridate', 'ggthemes', 
               'plotly', 'haven', 'devtools', 'openxlsx', 'ggTimeSeries', 
@@ -24,102 +22,131 @@ load.lib <- c('data.table', 'plyr', 'doBy', 'outreg', 'margins', 'ggplot2',
               'rio', 'gridExtra', 'corrplot', 'MASS','RSelenium','rvest','wdman')
 
 install.lib <- load.lib[!load.lib %in% installed.packages()]
-for(lib in install.lib) install.packages(lib) # ,dependencies=TRUE
+for(lib in install.lib) install.packages(lib)
 sapply(load.lib, require, character = TRUE)
 
 print("Librerías cargadas")
-
-
 ```
 
-## Scrapping
-
-
-```{r pressure, echo=FALSE}
+Web Scraping
+```{r setup, include=FALSE}
 url_base <- "https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_"
 
-# Leer la primera página con nombres de columna
+# Leer la primera página
 pagina <- read_html(paste0(url_base, "1.html"))
 datos_totales <- pagina %>% html_table(fill = TRUE) %>% .[[1]]
 
-# Iterar sobre las páginas 2 a 10 sin incluir los nombres de columna repetidos
+# Iterar sobre las páginas 2 a 10
 for (i in 2:10) {
   url <- paste0(url_base, i, ".html")
-  pagina <- read_html(url)
-  tabla <- pagina %>% html_table(fill = TRUE) %>% .[[1]]
-  
-  # Unir los datos sin incluir la primera fila de la tabla (cabecera repetida)
-  datos_totales <- bind_rows(datos_totales, tabla)
+  tryCatch({
+    pagina <- read_html(url)
+    tabla <- pagina %>% html_table(fill = TRUE) %>% .[[1]]
+    datos_totales <- bind_rows(datos_totales, tabla)
+    message(paste("Página", i, "scrapeada correctamente."))
+  }, error = function(e) {
+    message(paste("Error al cargar la página", i, ":", e))
+  })
 }
 
-# Ver los primeros registros
 head(datos_totales)
-
 ```
 
-##limpieza
+Renombrar Columnas
+```{r setup, include=FALSE}
+datos_totales <- datos_totales %>%
+  rename(
+    ingreso_total = ingtot,
+    edad = age,
+    hombre = sex,
+    T_horas_trabajadas = totalHoursWorked,
+    Salario_hora = y_salary_m_hu
+  )
+```
 
-
-```{r pressure, echo=FALSE}
-datos_totales <- as_tibble(datos_totales)
-
-na_ingtot <- sum(is.na(datos_totales$ingtot))
-na_age <- sum(is.na(datos_totales$age))
-na_sex <- sum(is.na(datos_totales$sex))
-na_totalHoursWorked <- sum(is.na(datos_totales$totalHoursWorked))
-na_y_salary_m_hu <- sum(is.na(datos_totales$y_salary_m_hu))
-
-
-# Crear un dataframe con los resultados
+Identificación de Valores Faltantes
+```{r setup, include=FALSE}
+# Contar NA por columna
 na_counts <- data.frame(
-  Variable = c("ingtot", "age", "sex", "totalHoursWorked","y_salary_m_hu"),
-  NAs = c(na_ingtot, na_age, na_sex, na_totalHoursWorked, na_y_salary_m_hu)
+  Variable = c("ingreso_total", "edad", "hombre", "T_horas_trabajadas", "Salario_hora"),
+  NAs = c(
+    sum(is.na(datos_totales$ingreso_total)),
+    sum(is.na(datos_totales$edad)),
+    sum(is.na(datos_totales$hombre)),
+    sum(is.na(datos_totales$T_horas_trabajadas)),
+    sum(is.na(datos_totales$Salario_hora))
+  )
 )
 
-# Mostrar los resultados ordenados por cantidad de NA
+# Mostrar los resultados
 na_counts <- na_counts %>% arrange(desc(NAs))
 print(na_counts)
-
 ```
 
-
-```{r pressure, echo=FALSE}
-#Primer limpieza de datos enfocada en los NA
-datos_filtrados <- datos_totales %>% filter(age >= 18, ingtot > 0, totalHoursWorked > 0, y_salary_m_hu > 0)
-skim(datos_filtrados) %>% head()
-
-
+Filtrar Observaciones No Válidas
+```{r setup, include=FALSE}
+# Filtro de edad, ingreso y horas trabajadas
+datos_filtrados <- datos_totales %>% filter(edad >= 18, ingreso_total > 0, T_horas_trabajadas > 0, Salario_hora > 0)
 ```
 
-```{r pressure, echo=FALSE}
+División de Datos en Entrenamiento y Prueba (Enfoque Basado en Clase)
+```{r setup, include=FALSE}
+set.seed(10101)
 
-na_ingtot <- sum(is.na(datos_filtrados$ingtot))
-na_age <- sum(is.na(datos_filtrados$age))
-na_sex <- sum(is.na(datos_filtrados$sex))
-na_totalHoursWorked <- sum(is.na(datos_filtrados$totalHoursWorked))
-na_y_salary_m_hu <- sum(is.na(datos_filtrados$y_salary_m_hu))
+# Crear una columna de identificación
+datos_filtrados$id <- 1:nrow(datos_filtrados)
 
+# Seleccionar el 70% de las filas para el conjunto de entrenamiento
+datos_entrenamiento <- datos_filtrados %>% dplyr::sample_frac(0.7)
 
-# Crear un dataframe con los resultados
-na_counts <- data.frame(
-  Variable = c("ingtot", "age", "sex", "totalHoursWorked","y_salary_m_hu"),
-  NAs = c(na_ingtot, na_age, na_sex, na_totalHoursWorked, na_y_salary_m_hu)
-)
+# El resto de las filas se utilizarán como conjunto de prueba
+datos_prueba <- datos_filtrados %>% dplyr::anti_join(datos_entrenamiento, by = "id")
 
-# Mostrar los resultados ordenados por cantidad de NA
-na_counts <- na_counts %>% arrange(desc(NAs))
-print(na_counts)
-
+# Verificar tamaños
+cat("Tamaño del conjunto de entrenamiento:", nrow(datos_entrenamiento), "\n")
+cat("Tamaño del conjunto de prueba:", nrow(datos_prueba), "\n")
 ```
-##Filtrado Valores atipicos
-```{r pressure, echo=FALSE}
-# Boxplot de totalHoursWorked
-ggplot(datos_filtrados, aes(y = totalHoursWorked)) +
-  geom_boxplot() +
-  labs(title = "Boxplot de Horas Trabajadas", y = "Horas Trabajadas")
 
-# Boxplot de y_salary_m_hu
-ggplot(datos_filtrados, aes(y = log(y_salary_m_hu))) +
-  geom_boxplot() +
-  labs(title = "Boxplot de Salario por Hora (Logaritmo Natural)", y = "ln(Salario por Hora)")
+Modelos de Regresión
+
+Modelo 1: Constante
+```{r setup, include=FALSE}
+modelo1 <- lm(ln_Salario_hora ~ 1, data = datos_entrenamiento)
+summary(modelo1)
+```
+
+Modelo 2: Edad y Edad^2
+```{r setup, include=FALSE}
+modelo2 <- lm(ln_Salario_hora ~ edad + I(edad^2), data = datos_entrenamiento)
+summary(modelo2)
+```
+
+Modelo 3: Género y Edad
+```{r setup, include=FALSE}
+modelo3 <- lm(ln_Salario_hora ~ hombre + edad, data = datos_entrenamiento)
+summary(modelo3)
+```
+
+Predicciones y Evaluación del Modelo
+Generar Predicciones
+```{r setup, include=FALSE}
+datos_prueba$prediccion_m1 <- predict(modelo1, newdata = datos_prueba)
+datos_prueba$prediccion_m2 <- predict(modelo2, newdata = datos_prueba)
+datos_prueba$prediccion_m3 <- predict(modelo3, newdata = datos_prueba)
+```
+
+Calcular RMSE
+```{r setup, include=FALSE}
+rmse <- function(actual, predicho) {
+  sqrt(mean((actual - predicho)^2))
+}
+
+rmse_m1 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m1)
+rmse_m2 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m2)
+rmse_m3 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m3)
+
+# Mostrar resultados
+print(paste("RMSE Modelo 1:", round(rmse_m1, 4)))
+print(paste("RMSE Modelo 2:", round(rmse_m2, 4)))
+print(paste("RMSE Modelo 3:", round(rmse_m3, 4)))
 ```
