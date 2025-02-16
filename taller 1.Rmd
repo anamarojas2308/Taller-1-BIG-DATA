@@ -87,6 +87,10 @@ Filtrar Observaciones No Válidas
 ```{r setup, include=FALSE}
 # Filtro de edad, ingreso y horas trabajadas
 datos_filtrados <- datos_totales %>% filter(edad >= 18, ingreso_total > 0, T_horas_trabajadas > 0, Salario_hora > 0)
+
+# Crear la variable logarítmica `ln_Salario_hora`
+datos_filtrados <- datos_filtrados %>%
+  mutate(ln_Salario_hora = log(Salario_hora))
 ```
 
 División de Datos en Entrenamiento y Prueba (Enfoque Basado en Clase)
