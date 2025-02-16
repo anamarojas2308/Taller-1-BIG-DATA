@@ -154,3 +154,67 @@ print(paste("RMSE Modelo 1:", round(rmse_m1, 4)))
 print(paste("RMSE Modelo 2:", round(rmse_m2, 4)))
 print(paste("RMSE Modelo 3:", round(rmse_m3, 4)))
 ```
+Modelos Adicionales
+```{r setup, include=FALSE}
+# Modelo 4: Polinomio cúbico en edad
+modelo4 <- lm(ln_Salario_hora ~ poly(edad, 3, raw = TRUE), data = datos_entrenamiento)
+
+# Modelo 5: Interacción entre género y edad
+modelo5 <- lm(ln_Salario_hora ~ hombre * edad, data = datos_entrenamiento)
+
+# Modelo 6: Modelo con todas las covariables
+modelo6 <- lm(ln_Salario_hora ~ hombre + edad + I(edad^2) + T_horas_trabajadas, data = datos_entrenamiento)
+
+# Modelo 7: Polinomios y log(T_horas_trabajadas)
+modelo7 <- lm(ln_Salario_hora ~ poly(edad, 2) + log(T_horas_trabajadas), data = datos_entrenamiento)
+```
+
+Predicciones y RMSE para los Modelos Adicionales
+```{r setup, include=FALSE}
+# Predicciones para los nuevos modelos
+datos_prueba$prediccion_m4 <- predict(modelo4, newdata = datos_prueba)
+datos_prueba$prediccion_m5 <- predict(modelo5, newdata = datos_prueba)
+datos_prueba$prediccion_m6 <- predict(modelo6, newdata = datos_prueba)
+datos_prueba$prediccion_m7 <- predict(modelo7, newdata = datos_prueba)
+
+# Calcular RMSE para todos los modelos
+rmse_m4 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m4)
+rmse_m5 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m5)
+rmse_m6 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m6)
+rmse_m7 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m7)
+
+# Comparar en una tabla
+rmse_comparacion <- data.frame(
+  Modelo = c("Modelo 1", "Modelo 2", "Modelo 3", "Modelo 4", "Modelo 5", "Modelo 6", "Modelo 7"),
+  RMSE = c(rmse_m1, rmse_m2, rmse_m3, rmse_m4, rmse_m5, rmse_m6, rmse_m7)
+)
+
+print(rmse_comparacion)
+```
+
+LOOCV para Modelos Específicos
+```{r setup, include=FALSE}
+# LOOCV para el Modelo 2
+mse_loocv_modelo2 <- numeric(nrow(datos_filtrados))
+for (i in 1:nrow(datos_filtrados)) {
+  datos_entrenamiento <- datos_filtrados[-i, ]
+  datos_prueba <- datos_filtrados[i, ]
+  modelo_loocv <- lm(ln_Salario_hora ~ edad + I(edad^2), data = datos_entrenamiento)
+  prediccion <- predict(modelo_loocv, newdata = datos_prueba)
+  mse_loocv_modelo2[i] <- (datos_prueba$ln_Salario_hora - prediccion)^2
+}
+loocv_error_modelo2 <- mean(mse_loocv_modelo2)
+print(paste("LOOCV Error para Modelo 2:", round(loocv_error_modelo2, 4)))
+
+# LOOCV para el Modelo 3
+mse_loocv_modelo3 <- numeric(nrow(datos_filtrados))
+for (i in 1:nrow(datos_filtrados)) {
+  datos_entrenamiento <- datos_filtrados[-i, ]
+  datos_prueba <- datos_filtrados[i, ]
+  modelo_loocv <- lm(ln_Salario_hora ~ hombre + edad, data = datos_entrenamiento)
+  prediccion <- predict(modelo_loocv, newdata = datos_prueba)
+  mse_loocv_modelo3[i] <- (datos_prueba$ln_Salario_hora - prediccion)^2
+}
+loocv_error_modelo3 <- mean(mse_loocv_modelo3)
+print(paste("LOOCV Error para Modelo 3:", round(loocv_error_modelo3, 4)))
+```
