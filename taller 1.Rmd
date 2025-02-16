@@ -11,7 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r setup, include=FALSE}
 rm(list = ls())
+gc() 
+closeAllConnections()
+```
 
+```{r setup, include=FALSE}
 load.lib <- c('data.table', 'plyr', 'doBy', 'outreg', 'margins', 'ggplot2', 
               'stargazer', 'tidyverse', 'dplyr', 'lubridate', 'ggthemes', 
               'plotly', 'haven', 'devtools', 'openxlsx', 'ggTimeSeries', 
@@ -19,7 +23,7 @@ load.lib <- c('data.table', 'plyr', 'doBy', 'outreg', 'margins', 'ggplot2',
               'rvest', 'rebus', 'purrr', 'tidytext', 'syuzhet', 
               'tokenizers', 'tm', 'wordcloud', 'cluster', 
               'topicmodels', 'SnowballC', 'pacman', 'skimr',
-              'rio', 'gridExtra', 'corrplot', 'MASS','RSelenium','rvest','wdman')
+              'rio', 'gridExtra', 'corrplot', 'MASS','RSelenium','rvest','wdman', 'caret')
 
 install.lib <- load.lib[!load.lib %in% installed.packages()]
 for(lib in install.lib) install.packages(lib)
@@ -83,10 +87,22 @@ na_counts <- na_counts %>% arrange(desc(NAs))
 print(na_counts)
 ```
 
-Filtrar Observaciones No Válidas
+Filtrar Observaciones No Válidas y Valores Atípicos
 ```{r setup, include=FALSE}
 # Filtro de edad, ingreso y horas trabajadas
 datos_filtrados <- datos_totales %>% filter(edad >= 18, ingreso_total > 0, T_horas_trabajadas > 0, Salario_hora > 0)
+
+# Definir los cuantiles 1% y 99% para filtrar outliers
+low_hours <- quantile(datos_filtrados$T_horas_trabajadas, 0.01)
+up_hours <- quantile(datos_filtrados$T_horas_trabajadas, 0.99)
+
+low_salary <- quantile(datos_filtrados$Salario_hora, 0.01)
+up_salary <- quantile(datos_filtrados$Salario_hora, 0.99)
+
+# Filtrar datos dentro del rango definido
+datos_filtrados <- datos_filtrados %>%
+  filter(T_horas_trabajadas >= low_hours & T_horas_trabajadas <= up_hours,
+         Salario_hora >= low_salary & Salario_hora <= up_salary)
 
 # Crear la variable logarítmica `ln_Salario_hora`
 datos_filtrados <- datos_filtrados %>%
@@ -154,6 +170,7 @@ print(paste("RMSE Modelo 1:", round(rmse_m1, 4)))
 print(paste("RMSE Modelo 2:", round(rmse_m2, 4)))
 print(paste("RMSE Modelo 3:", round(rmse_m3, 4)))
 ```
+
 Modelos Adicionales
 ```{r setup, include=FALSE}
 # Modelo 4: Polinomio cúbico en edad
@@ -173,48 +190,5 @@ Predicciones y RMSE para los Modelos Adicionales
 ```{r setup, include=FALSE}
 # Predicciones para los nuevos modelos
 datos_prueba$prediccion_m4 <- predict(modelo4, newdata = datos_prueba)
-datos_prueba$prediccion_m5 <- predict(modelo5, newdata = datos_prueba)
-datos_prueba$prediccion_m6 <- predict(modelo6, newdata = datos_prueba)
-datos_prueba$prediccion_m7 <- predict(modelo7, newdata = datos_prueba)
-
-# Calcular RMSE para todos los modelos
-rmse_m4 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m4)
-rmse_m5 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m5)
-rmse_m6 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m6)
-rmse_m7 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m7)
-
-# Comparar en una tabla
-rmse_comparacion <- data.frame(
-  Modelo = c("Modelo 1", "Modelo 2", "Modelo 3", "Modelo 4", "Modelo 5", "Modelo 6", "Modelo 7"),
-  RMSE = c(rmse_m1, rmse_m2, rmse_m3, rmse_m4, rmse_m5, rmse_m6, rmse_m7)
-)
-
-print(rmse_comparacion)
-```
-
-LOOCV para Modelos Específicos
-```{r setup, include=FALSE}
-# LOOCV para el Modelo 2
-mse_loocv_modelo2 <- numeric(nrow(datos_filtrados))
-for (i in 1:nrow(datos_filtrados)) {
-  datos_entrenamiento <- datos_filtrados[-i, ]
-  datos_prueba <- datos_filtrados[i, ]
-  modelo_loocv <- lm(ln_Salario_hora ~ edad + I(edad^2), data = datos_entrenamiento)
-  prediccion <- predict(modelo_loocv, newdata = datos_prueba)
-  mse_loocv_modelo2[i] <- (datos_prueba$ln_Salario_hora - prediccion)^2
-}
-loocv_error_modelo2 <- mean(mse_loocv_modelo2)
-print(paste("LOOCV Error para Modelo 2:", round(loocv_error_modelo2, 4)))
-
-# LOOCV para el Modelo 3
-mse_loocv_modelo3 <- numeric(nrow(datos_filtrados))
-for (i in 1:nrow(datos_filtrados)) {
-  datos_entrenamiento <- datos_filtrados[-i, ]
-  datos_prueba <- datos_filtrados[i, ]
-  modelo_loocv <- lm(ln_Salario_hora ~ hombre + edad, data = datos_entrenamiento)
-  prediccion <- predict(modelo_loocv, newdata = datos_prueba)
-  mse_loocv_modelo3[i] <- (datos_prueba$ln_Salario_hora - prediccion)^2
-}
-loocv_error_modelo3 <- mean(mse_loocv_modelo3)
-print(paste("LOOCV Error para Modelo 3:", round(loocv_error_modelo3, 4)))
+datos_prueba
 ```
