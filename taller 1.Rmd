@@ -1,7 +1,7 @@
 ---
 title: "Primer Taller big data"
 author: "Julian Delgado Gutierrez"
-date: "2025-02-16"
+date: "2025-02-19"
 output: html_document
 ---
 
@@ -9,45 +9,35 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Configuración Inicial
 ```{r setup, include=FALSE}
 rm(list = ls())
-gc() 
+gc()
 closeAllConnections()
-```
 
-```{r setup, include=FALSE}
-load.lib <- c('data.table', 'plyr', 'doBy', 'outreg', 'margins', 'ggplot2', 
-              'stargazer', 'tidyverse', 'dplyr', 'lubridate', 'ggthemes', 
-              'plotly', 'haven', 'devtools', 'openxlsx', 'ggTimeSeries', 
-              'gganimate', 'gifski', 'ggiraph', 'sf', 'stringr', 
-              'rvest', 'rebus', 'purrr', 'tidytext', 'syuzhet', 
-              'tokenizers', 'tm', 'wordcloud', 'cluster', 
-              'topicmodels', 'SnowballC', 'pacman', 'skimr',
-              'rio', 'gridExtra', 'corrplot', 'MASS','RSelenium','rvest','wdman', 'caret')
+# Cargar librerías necesarias
+load.lib <- c('data.table', 'dplyr', 'ggplot2', 'stargazer', 'tidyverse', 'lubridate',
+              'plotly', 'rvest', 'tm', 'wordcloud', 'caret', 'boot', 'pacman')
 
 install.lib <- load.lib[!load.lib %in% installed.packages()]
 for(lib in install.lib) install.packages(lib)
 sapply(load.lib, require, character = TRUE)
 
-print("Librerías cargadas")
+print("Librerías cargadas correctamente")
 ```
 
-Web Scraping
-```{r setup, include=FALSE}
+# Web Scraping de GEIH
+```{r scraping, include=FALSE}
 url_base <- "https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_"
-
-# Leer la primera página
 pagina <- read_html(paste0(url_base, "1.html"))
 datos_totales <- pagina %>% html_table(fill = TRUE) %>% .[[1]]
 
-# Iterar sobre las páginas 2 a 10
 for (i in 2:10) {
   url <- paste0(url_base, i, ".html")
   tryCatch({
     pagina <- read_html(url)
     tabla <- pagina %>% html_table(fill = TRUE) %>% .[[1]]
     datos_totales <- bind_rows(datos_totales, tabla)
-    message(paste("Página", i, "scrapeada correctamente."))
   }, error = function(e) {
     message(paste("Error al cargar la página", i, ":", e))
   })
@@ -56,8 +46,8 @@ for (i in 2:10) {
 head(datos_totales)
 ```
 
-Renombrar Columnas
-```{r setup, include=FALSE}
+# Renombrar Columnas y Limpiar Datos
+```{r limpieza, include=FALSE}
 datos_totales <- datos_totales %>%
   rename(
     ingreso_total = ingtot,
@@ -65,130 +55,165 @@ datos_totales <- datos_totales %>%
     hombre = sex,
     T_horas_trabajadas = totalHoursWorked,
     Salario_hora = y_salary_m_hu
+  ) %>%
+  mutate(
+    ln_Salario_hora = log(Salario_hora)
   )
-```
 
-Identificación de Valores Faltantes
-```{r setup, include=FALSE}
-# Contar NA por columna
-na_counts <- data.frame(
-  Variable = c("ingreso_total", "edad", "hombre", "T_horas_trabajadas", "Salario_hora"),
-  NAs = c(
-    sum(is.na(datos_totales$ingreso_total)),
-    sum(is.na(datos_totales$edad)),
-    sum(is.na(datos_totales$hombre)),
-    sum(is.na(datos_totales$T_horas_trabajadas)),
-    sum(is.na(datos_totales$Salario_hora))
-  )
-)
+# Filtrar registros inválidos
 
-# Mostrar los resultados
-na_counts <- na_counts %>% arrange(desc(NAs))
-print(na_counts)
-```
+datos_filtrados <- datos_totales %>%
+  filter(edad >= 18, ingreso_total > 0, T_horas_trabajadas > 0, Salario_hora > 0)
 
-Filtrar Observaciones No Válidas y Valores Atípicos
-```{r setup, include=FALSE}
-# Filtro de edad, ingreso y horas trabajadas
-datos_filtrados <- datos_totales %>% filter(edad >= 18, ingreso_total > 0, T_horas_trabajadas > 0, Salario_hora > 0)
-
-# Definir los cuantiles 1% y 99% para filtrar outliers
+# Identificar y eliminar outliers usando percentiles 1% y 99%
 low_hours <- quantile(datos_filtrados$T_horas_trabajadas, 0.01)
 up_hours <- quantile(datos_filtrados$T_horas_trabajadas, 0.99)
-
 low_salary <- quantile(datos_filtrados$Salario_hora, 0.01)
 up_salary <- quantile(datos_filtrados$Salario_hora, 0.99)
 
-# Filtrar datos dentro del rango definido
 datos_filtrados <- datos_filtrados %>%
   filter(T_horas_trabajadas >= low_hours & T_horas_trabajadas <= up_hours,
          Salario_hora >= low_salary & Salario_hora <= up_salary)
 
-# Crear la variable logarítmica `ln_Salario_hora`
-datos_filtrados <- datos_filtrados %>%
-  mutate(ln_Salario_hora = log(Salario_hora))
 ```
 
-División de Datos en Entrenamiento y Prueba (Enfoque Basado en Clase)
-```{r setup, include=FALSE}
+# Dividir Datos en Entrenamiento y Prueba
+```{r dividir_datos, include=FALSE}
 set.seed(10101)
-
-# Crear una columna de identificación
 datos_filtrados$id <- 1:nrow(datos_filtrados)
+datos_entrenamiento <- datos_filtrados %>% sample_frac(0.7)
+datos_prueba <- datos_filtrados %>% anti_join(datos_entrenamiento, by = "id")
 
-# Seleccionar el 70% de las filas para el conjunto de entrenamiento
-datos_entrenamiento <- datos_filtrados %>% dplyr::sample_frac(0.7)
-
-# El resto de las filas se utilizarán como conjunto de prueba
-datos_prueba <- datos_filtrados %>% dplyr::anti_join(datos_entrenamiento, by = "id")
-
-# Verificar tamaños
 cat("Tamaño del conjunto de entrenamiento:", nrow(datos_entrenamiento), "\n")
 cat("Tamaño del conjunto de prueba:", nrow(datos_prueba), "\n")
 ```
 
-Modelos de Regresión
+# Modelos de Regresión
 
-Modelo 1: Constante
-```{r setup, include=FALSE}
+## Modelo 1: Constante
+```{r modelo1, include=FALSE}
 modelo1 <- lm(ln_Salario_hora ~ 1, data = datos_entrenamiento)
 summary(modelo1)
 ```
 
-Modelo 2: Edad y Edad^2
-```{r setup, include=FALSE}
+## Modelo 2: Edad y Edad^2
+```{r modelo2, include=FALSE}
 modelo2 <- lm(ln_Salario_hora ~ edad + I(edad^2), data = datos_entrenamiento)
 summary(modelo2)
 ```
 
-Modelo 3: Género y Edad
-```{r setup, include=FALSE}
+## Modelo 3: Género y Edad
+```{r modelo3, include=FALSE}
 modelo3 <- lm(ln_Salario_hora ~ hombre + edad, data = datos_entrenamiento)
 summary(modelo3)
 ```
 
-Predicciones y Evaluación del Modelo
-Generar Predicciones
-```{r setup, include=FALSE}
-datos_prueba$prediccion_m1 <- predict(modelo1, newdata = datos_prueba)
-datos_prueba$prediccion_m2 <- predict(modelo2, newdata = datos_prueba)
-datos_prueba$prediccion_m3 <- predict(modelo3, newdata = datos_prueba)
-```
-
-Calcular RMSE
-```{r setup, include=FALSE}
+# Evaluación de Modelos (RMSE)
+```{r evaluacion, include=FALSE}
 rmse <- function(actual, predicho) {
   sqrt(mean((actual - predicho)^2))
 }
+
+datos_prueba$prediccion_m1 <- predict(modelo1, newdata = datos_prueba)
+datos_prueba$prediccion_m2 <- predict(modelo2, newdata = datos_prueba)
+datos_prueba$prediccion_m3 <- predict(modelo3, newdata = datos_prueba)
 
 rmse_m1 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m1)
 rmse_m2 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m2)
 rmse_m3 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m3)
 
-# Mostrar resultados
-print(paste("RMSE Modelo 1:", round(rmse_m1, 4)))
-print(paste("RMSE Modelo 2:", round(rmse_m2, 4)))
-print(paste("RMSE Modelo 3:", round(rmse_m3, 4)))
+cat("RMSE Modelo 1:", round(rmse_m1, 4), "\n")
+cat("RMSE Modelo 2:", round(rmse_m2, 4), "\n")
+cat("RMSE Modelo 3:", round(rmse_m3, 4), "\n")
 ```
 
-Modelos Adicionales
-```{r setup, include=FALSE}
-# Modelo 4: Polinomio cúbico en edad
+# Intervalos de Confianza mediante Bootstrap
+```{r bootstrap, include=FALSE}
+# Función para bootstrap del coeficiente de edad
+boot_fn <- function(data, indices) {
+  modelo_boot <- lm(ln_Salario_hora ~ edad + I(edad^2), data = data[indices, ])
+  return(coef(modelo_boot))
+}
+
+boot_results <- boot(datos_entrenamiento, boot_fn, R = 1000)
+
+# Intervalo de confianza al 95% para el coeficiente de edad
+boot.ci(boot_results, type = "perc", index = 2)
+```
+
+# Visualización de la Curva de Edad-Ingreso
+```{r curva_edad_ingreso, include=FALSE}
+edad_seq <- data.frame(edad = seq(min(datos_entrenamiento$edad), max(datos_entrenamiento$edad), by = 1))
+edad_seq$ln_Salario_hora_pred <- predict(modelo2, newdata = edad_seq)
+
+curv_edad_salario <- ggplot(datos_entrenamiento, aes(x = edad, y = ln_Salario_hora)) +
+                      geom_point(alpha = 0.3) +
+                      geom_line(data = edad_seq, aes(x = edad, y = ln_Salario_hora_pred), color = "blue") +
+                      labs(title = "Curva de Edad vs. Log Salario Hora",
+                       x = "Edad", y = "Log Salario Hora")
+
+print(curv_edad_salario)
+```
+
+# Comparación entre Modelos Condicionales y No Condicionales
+```{r comparacion_modelos, include=FALSE}
+modelo_sin_controles <- lm(ln_Salario_hora ~ hombre, data = datos_entrenamiento)
+modelo_con_controles <- lm(ln_Salario_hora ~ hombre + edad + T_horas_trabajadas, data = datos_entrenamiento)
+
+stargazer(modelo_sin_controles, modelo_con_controles, type = "text", title = "Comparación de Modelos")
+```
+
+# Validación Cruzada (5-fold)
+```{r validacion_cruzada, include=FALSE}
+train_control <- trainControl(method = "cv", number = 5)
+modelo_cv <- train(ln_Salario_hora ~ edad + I(edad^2), data = datos_entrenamiento, method = "lm", trControl = train_control)
+print(modelo_cv)
+```
+
+# Modelos Adicionales (Polinomiales e Interacciones)
+```{r modelos_adicionales, include=FALSE}
 modelo4 <- lm(ln_Salario_hora ~ poly(edad, 3, raw = TRUE), data = datos_entrenamiento)
-
-# Modelo 5: Interacción entre género y edad
 modelo5 <- lm(ln_Salario_hora ~ hombre * edad, data = datos_entrenamiento)
-
-# Modelo 6: Modelo con todas las covariables
 modelo6 <- lm(ln_Salario_hora ~ hombre + edad + I(edad^2) + T_horas_trabajadas, data = datos_entrenamiento)
-
-# Modelo 7: Polinomios y log(T_horas_trabajadas)
 modelo7 <- lm(ln_Salario_hora ~ poly(edad, 2) + log(T_horas_trabajadas), data = datos_entrenamiento)
+
+# Predicciones y RMSE para los nuevos modelos
+datos_prueba$prediccion_m4 <- predict(modelo4, newdata = datos_prueba)
+datos_prueba$prediccion_m5 <- predict(modelo5, newdata = datos_prueba)
+datos_prueba$prediccion_m6 <- predict(modelo6, newdata = datos_prueba)
+datos_prueba$prediccion_m7 <- predict(modelo7, newdata = datos_prueba)
+
+rmse_m4 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m4)
+rmse_m5 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m5)
+rmse_m6 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m6)
+rmse_m7 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m7)
 ```
 
-Predicciones y RMSE para los Modelos Adicionales
-```{r setup, include=FALSE}
-# Predicciones para los nuevos modelos
-datos_prueba$prediccion_m4 <- predict(modelo4, newdata = datos_prueba)
-datos_prueba
+# Mostrar los resultados de RMSE para todos los modelos
+```{r resultados_rmse, include=FALSE}
+cat("RMSE Modelo 1:", round(rmse_m1, 4), "\n")
+cat("RMSE Modelo 2:", round(rmse_m2, 4), "\n")
+cat("RMSE Modelo 3:", round(rmse_m3, 4), "\n")
+cat("RMSE Modelo 4:", round(rmse_m4, 4), "\n")
+cat("RMSE Modelo 5:", round(rmse_m5, 4), "\n")
+cat("RMSE Modelo 6:", round(rmse_m6, 4), "\n")
+cat("RMSE Modelo 7:", round(rmse_m7, 4), "\n")
+```
+
+# Comparación gráfica de los errores de predicción entre los modelos
+```{r comparacion_grafica, include=FALSE}
+mse_values <- data.frame(
+  Modelo = c("Modelo 1", "Modelo 2", "Modelo 3", "Modelo 4", "Modelo 5", "Modelo 6", "Modelo 7"),
+  RMSE = c(rmse_m1, rmse_m2, rmse_m3, rmse_m4, rmse_m5, rmse_m6, rmse_m7)
+)
+
+# Visualizar los RMSE en un gráfico de barras
+
+RMSE_barras <- ggplot(mse_values, aes(x = Modelo, y = RMSE, fill = Modelo)) +
+                 geom_bar(stat = "identity", show.legend = FALSE) +
+                 labs(title = "Comparación de RMSE entre Modelos",
+                      x = "Modelo", y = "RMSE") +
+                 theme_minimal()
+
+print(RMSE_barras)
 ```
