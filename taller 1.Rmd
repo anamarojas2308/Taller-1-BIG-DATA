@@ -1,6 +1,6 @@
 ---
 title: "Primer Taller big data"
-author: "Julian Delgado Gutierrez"
+authors: "Julian Delgado Gutierrez, Ana María Rojas, Juan David Rincón, Mario"
 date: "2025-02-19"
 output: html_document
 ---
@@ -45,6 +45,13 @@ for (i in 2:10) {
 
 head(datos_totales)
 ```
+#PUNTO 2A:
+#Describir brevemente la data:
+#Una vez se combinan los datos y se obtiene la base completa, se evidencia que hay información que nos permite analizar el mercado laboral y variables ecónomicas de diferentes individios. Se encuentra que el objetivo principal de la base de datos es analizar ingresos (salario) y comportamientos del mercado. Hay variables que nos permiten analizar características individuales como la edad, género, educación, departamento, entre otras y variables que se relacionan con la actividad laboral como los ingresos, horas trabajadas, tipo de empleo, sector económico, entre otras. La selección de las variables es clave puesto que permitirá evaluar los factores que influyen en el ingreso y analizar fenómenos como la brecha salarial de género. De igual forma, es importante mencionar que la base tiene valores faltantes y observaciones con ingreso igual a cero, lo que sugiere la necesidad de un proceso de limpieza antes del análisis. La base tiene una estructura de formato tabular, la cual facilita el procesamiento de los datos y el análisis de los mismos mediante descripciones estadísticas. Adicionalmente, se considera que los datos proporcionados son fundamentales para construir un modelo predictivo de ingresos por hora y detectar como variables sociodemográficas y laborales inciden en la remuneración de los individuos.
+
+#PUNTO 2B:
+#Proceso y dificultades accediendo a la data:
+#En primer lugar hay que tener presente que los datos no se pueden descargar como un archivo, sino que se encuentran en un página web (https://ignaciomsarmiento.github.io/GEIH2018_sample/), por lo cual, es necesario hacer web scrapping para extraerlos. Los datos estaban distribuidos en diferentes sitios web, por lo se combinaron en un único conjunto de datos. De esta forma, se difinió la base de la URL, donde cada página se nombró siguiendo un patrón (geih_page_1.html", "geih_page_2.html ..., etc). Con ayuda de la libreria rvest se leyó el contenido HTML de cada página (data chunk 1:10), se extrajeron las tablas y se combinaron los datos en un solo dataframe, almacenando el resultado en la variables datos_totales. Para evitar que el código fuese a generar error en caso de que una de las páginas no cargara correctamente, se utilizó tryCatch (manejo de errores). De esta forma, se buscaba que si las páginas cargaban correctamente, se extrayera las tablas y se añadieran a la variable "datos_totales" y si se llegaba a presentar algún problema de lectura, se captaría el error sin detener la ejecución total. Por lo tanto, el código permite automatizar el proceso de recolección de datos que están distribuidores en diferentes sitios web y cuando se trabaja con grandes volúmenes de datos, aún si se presenta algún problema. No se encuentran restricciones dado que la página no tiene capchas ni bloqueos para la extracción de datos, pero tuvimos presente no hacer múltiples solicitudes en un corto período de tiempo para no sobrecargar el servidor. Por el otro lado, los datos son públicos y fueron diseñados para fines académicos, por lo que facilito en gran medida el scrapping. 
 
 # Renombrar Columnas y Limpiar Datos
 ```{r limpieza, include=FALSE}
