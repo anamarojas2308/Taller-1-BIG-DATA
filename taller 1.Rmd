@@ -25,7 +25,7 @@ sapply(load.lib, require, character = TRUE)
 
 print("Librerías cargadas correctamente")
 ```
-
+PUNTO 2:
 # Web Scraping de GEIH
 ```{r scraping, include=FALSE}
 url_base <- "https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_"
@@ -83,6 +83,9 @@ datos_filtrados <- datos_filtrados %>%
          Salario_hora >= low_salary & Salario_hora <= up_salary)
 
 ```
+COMPLEMENTO JUAN:
+
+
 
 # Dividir Datos en Entrenamiento y Prueba
 ```{r dividir_datos, include=FALSE}
@@ -94,7 +97,6 @@ datos_prueba <- datos_filtrados %>% anti_join(datos_entrenamiento, by = "id")
 cat("Tamaño del conjunto de entrenamiento:", nrow(datos_entrenamiento), "\n")
 cat("Tamaño del conjunto de prueba:", nrow(datos_prueba), "\n")
 ```
-
 # Modelos de Regresión
 
 ## Modelo 1: Constante
