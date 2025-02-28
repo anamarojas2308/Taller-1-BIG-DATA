@@ -3,6 +3,9 @@ title: "Taller_1_BDML"
 authors: "Julian Delgado Gutierrez, Ana María Rojas, Juan David Rincón, Mario Andrés Mercado"
 date: "2025-02-19"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
@@ -13,8 +16,50 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-In the public sector, accurate reporting of individual income is critical for computing taxes. However, tax fraud of all kinds has always been a significant issue. According to the Internal
-Revenue Service (IRS), about 83.6% of taxes are paid voluntarily and on time in the US.1. One of the causes of this gap is the under-reporting of incomes by individuals. An income predicting model could potentially assist in flagging cases of fraud that could lead to the reduction of the gap. Furthermore, an income prediction model can help identify vulnerable individuals and families that may need further assistance.
+In the public sector, accurate reporting of individual income is
+critical for computing taxes. However, tax fraud of all kinds has always
+been a significant issue. According to the Internal Revenue Service
+(IRS), about 83.6% of taxes are paid voluntarily and on time in the
+US.1. One of the causes of this gap is the under-reporting of incomes by
+individuals. An income predicting model could potentially assist in
+flagging cases of fraud that could lead to the reduction of the gap.
+Furthermore, an income prediction model can help identify vulnerable
+individuals and families that may need further assistance.
+
+The objective of the problem set is to apply the concepts we learned
+using “real” world data. For that, we are going to scrape from the
+following website:
+<https://ignaciomsarmiento.github.io/GEIH2018-sample/> This website
+contains data for Bogotá from the 2018 “Medición de Pobreza Monetaria
+y Desigualdad Report” that takes information from the
+[GEIH.](https://www.dane.gov.co/index.php/estadisticas-por-tema/mercado-laboral/empleo-y-desempleo/geih-historicos)
+
+### General Instructions
+
+The main objective is to construct a model of individual hourly wages
+
+$$w = f(X)+u$$
+
+where $w$ is the hourly wage, and $X$ is a matrix that includes
+potential explanatory variables/predictors. In this problem set, we will
+focus on $f(X) = X\beta$. The final document, in .pdf format, must
+contain the following sections:
+
+1.  *Introduction.* The introduction briefly states the problem and if there are any antecedents. It briefly describes the data and its suitability to address the problem set question. It contains a preview of the results and main takeaways.
+
+2. *Data.* We will use data for Bogot´a from the 2018 “Medición de Pobreza Monetaria y Desigualdad Report” that takes information from the GEIH.
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -30,6 +75,7 @@ Revenue Service (IRS), about 83.6% of taxes are paid voluntarily and on time in 
 
 
 # Configuración Inicial
+
 ```{r setup, include=FALSE}
 rm(list = ls())
 gc()
@@ -45,8 +91,9 @@ sapply(load.lib, require, character = TRUE)
 
 print("Librerías cargadas correctamente")
 ```
-PUNTO 2:
-# Web Scraping de GEIH
+
+PUNTO 2: \# Web Scraping de GEIH
+
 ```{r scraping, include=FALSE}
 url_base <- "https://ignaciomsarmiento.github.io/GEIH2018_sample/pages/geih_page_"
 pagina <- read_html(paste0(url_base, "1.html"))
@@ -65,15 +112,57 @@ for (i in 2:10) {
 
 head(datos_totales)
 ```
-#PUNTO 2A:
-#Describir brevemente la data:
-#Una vez se combinan los datos y se obtiene la base completa, se evidencia que hay información que nos permite analizar el mercado laboral y variables ecónomicas de diferentes individios. Se encuentra que el objetivo principal de la base de datos es analizar ingresos (salario) y comportamientos del mercado. Hay variables que nos permiten analizar características individuales como la edad, género, educación, departamento, entre otras y variables que se relacionan con la actividad laboral como los ingresos, horas trabajadas, tipo de empleo, sector económico, entre otras. La selección de las variables es clave puesto que permitirá evaluar los factores que influyen en el ingreso y analizar fenómenos como la brecha salarial de género. De igual forma, es importante mencionar que la base tiene valores faltantes y observaciones con ingreso igual a cero, lo que sugiere la necesidad de un proceso de limpieza antes del análisis. La base tiene una estructura de formato tabular, la cual facilita el procesamiento de los datos y el análisis de los mismos mediante descripciones estadísticas. Adicionalmente, se considera que los datos proporcionados son fundamentales para construir un modelo predictivo de ingresos por hora y detectar como variables sociodemográficas y laborales inciden en la remuneración de los individuos.
 
-#PUNTO 2B:
-#Proceso y dificultades accediendo a la data:
-#En primer lugar hay que tener presente que los datos no se pueden descargar como un archivo, sino que se encuentran en un página web (https://ignaciomsarmiento.github.io/GEIH2018_sample/), por lo cual, es necesario hacer web scrapping para extraerlos. Los datos estaban distribuidos en diferentes sitios web, por lo se combinaron en un único conjunto de datos. De esta forma, se difinió la base de la URL, donde cada página se nombró siguiendo un patrón (geih_page_1.html", "geih_page_2.html ..., etc). Con ayuda de la libreria rvest se leyó el contenido HTML de cada página (data chunk 1:10), se extrajeron las tablas y se combinaron los datos en un solo dataframe, almacenando el resultado en la variables datos_totales. Para evitar que el código fuese a generar error en caso de que una de las páginas no cargara correctamente, se utilizó tryCatch (manejo de errores). De esta forma, se buscaba que si las páginas cargaban correctamente, se extrayera las tablas y se añadieran a la variable "datos_totales" y si se llegaba a presentar algún problema de lectura, se captaría el error sin detener la ejecución total. Por lo tanto, el código permite automatizar el proceso de recolección de datos que están distribuidores en diferentes sitios web y cuando se trabaja con grandes volúmenes de datos, aún si se presenta algún problema. No se encuentran restricciones dado que la página no tiene capchas ni bloqueos para la extracción de datos, pero tuvimos presente no hacer múltiples solicitudes en un corto período de tiempo para no sobrecargar el servidor. Por el otro lado, los datos son públicos y fueron diseñados para fines académicos, por lo que facilito en gran medida el scrapping. 
+#PUNTO 2A: #Describir brevemente la data: #Una vez se combinan los datos
+y se obtiene la base completa, se evidencia que hay información que nos
+permite analizar el mercado laboral y variables ecónomicas de diferentes
+individios. Se encuentra que el objetivo principal de la base de datos
+es analizar ingresos (salario) y comportamientos del mercado. Hay
+variables que nos permiten analizar características individuales como la
+edad, género, educación, departamento, entre otras y variables que se
+relacionan con la actividad laboral como los ingresos, horas trabajadas,
+tipo de empleo, sector económico, entre otras. La selección de las
+variables es clave puesto que permitirá evaluar los factores que
+influyen en el ingreso y analizar fenómenos como la brecha salarial de
+género. De igual forma, es importante mencionar que la base tiene
+valores faltantes y observaciones con ingreso igual a cero, lo que
+sugiere la necesidad de un proceso de limpieza antes del análisis. La
+base tiene una estructura de formato tabular, la cual facilita el
+procesamiento de los datos y el análisis de los mismos mediante
+descripciones estadísticas. Adicionalmente, se considera que los datos
+proporcionados son fundamentales para construir un modelo predictivo de
+ingresos por hora y detectar como variables sociodemográficas y
+laborales inciden en la remuneración de los individuos.
+
+#PUNTO 2B: #Proceso y dificultades accediendo a la data: #En primer
+lugar hay que tener presente que los datos no se pueden descargar como
+un archivo, sino que se encuentran en un página web
+(<https://ignaciomsarmiento.github.io/GEIH2018_sample/>), por lo cual,
+es necesario hacer web scrapping para extraerlos. Los datos estaban
+distribuidos en diferentes sitios web, por lo se combinaron en un único
+conjunto de datos. De esta forma, se difinió la base de la URL, donde
+cada página se nombró siguiendo un patrón (geih_page_1.html",
+"geih_page_2.html ..., etc). Con ayuda de la libreria rvest se leyó el
+contenido HTML de cada página (data chunk 1:10), se extrajeron las
+tablas y se combinaron los datos en un solo dataframe, almacenando el
+resultado en la variables datos_totales. Para evitar que el código fuese
+a generar error en caso de que una de las páginas no cargara
+correctamente, se utilizó tryCatch (manejo de errores). De esta forma,
+se buscaba que si las páginas cargaban correctamente, se extrayera las
+tablas y se añadieran a la variable "datos_totales" y si se llegaba a
+presentar algún problema de lectura, se captaría el error sin detener la
+ejecución total. Por lo tanto, el código permite automatizar el proceso
+de recolección de datos que están distribuidores en diferentes sitios
+web y cuando se trabaja con grandes volúmenes de datos, aún si se
+presenta algún problema. No se encuentran restricciones dado que la
+página no tiene capchas ni bloqueos para la extracción de datos, pero
+tuvimos presente no hacer múltiples solicitudes en un corto período de
+tiempo para no sobrecargar el servidor. Por el otro lado, los datos son
+públicos y fueron diseñados para fines académicos, por lo que facilito
+en gran medida el scrapping.
 
 # Renombrar Columnas y Limpiar Datos
+
 ```{r limpieza, include=FALSE}
 datos_totales <- datos_totales %>%
   rename(
@@ -103,11 +192,11 @@ datos_filtrados <- datos_filtrados %>%
          Salario_hora >= low_salary & Salario_hora <= up_salary)
 
 ```
+
 COMPLEMENTO JUAN:
 
-
-
 # Dividir Datos en Entrenamiento y Prueba
+
 ```{r dividir_datos, include=FALSE}
 set.seed(10101)
 datos_filtrados$id <- 1:nrow(datos_filtrados)
@@ -117,27 +206,32 @@ datos_prueba <- datos_filtrados %>% anti_join(datos_entrenamiento, by = "id")
 cat("Tamaño del conjunto de entrenamiento:", nrow(datos_entrenamiento), "\n")
 cat("Tamaño del conjunto de prueba:", nrow(datos_prueba), "\n")
 ```
+
 # Modelos de Regresión
 
 ## Modelo 1: Constante
+
 ```{r modelo1, include=FALSE}
 modelo1 <- lm(ln_Salario_hora ~ 1, data = datos_entrenamiento)
 summary(modelo1)
 ```
 
-## Modelo 2: Edad y Edad^2
+## Modelo 2: Edad y Edad\^2
+
 ```{r modelo2, include=FALSE}
 modelo2 <- lm(ln_Salario_hora ~ edad + I(edad^2), data = datos_entrenamiento)
 summary(modelo2)
 ```
 
 ## Modelo 3: Género y Edad
+
 ```{r modelo3, include=FALSE}
 modelo3 <- lm(ln_Salario_hora ~ hombre + edad, data = datos_entrenamiento)
 summary(modelo3)
 ```
 
 # Evaluación de Modelos (RMSE)
+
 ```{r evaluacion, include=FALSE}
 rmse <- function(actual, predicho) {
   sqrt(mean((actual - predicho)^2))
@@ -157,6 +251,7 @@ cat("RMSE Modelo 3:", round(rmse_m3, 4), "\n")
 ```
 
 # Intervalos de Confianza mediante Bootstrap
+
 ```{r bootstrap, include=FALSE}
 # Función para bootstrap del coeficiente de edad
 boot_fn <- function(data, indices) {
@@ -171,6 +266,7 @@ boot.ci(boot_results, type = "perc", index = 2)
 ```
 
 # Visualización de la Curva de Edad-Ingreso
+
 ```{r curva_edad_ingreso, include=FALSE}
 edad_seq <- data.frame(edad = seq(min(datos_entrenamiento$edad), max(datos_entrenamiento$edad), by = 1))
 edad_seq$ln_Salario_hora_pred <- predict(modelo2, newdata = edad_seq)
@@ -185,6 +281,7 @@ print(curv_edad_salario)
 ```
 
 # Comparación entre Modelos Condicionales y No Condicionales
+
 ```{r comparacion_modelos, include=FALSE}
 modelo_sin_controles <- lm(ln_Salario_hora ~ hombre, data = datos_entrenamiento)
 modelo_con_controles <- lm(ln_Salario_hora ~ hombre + edad + T_horas_trabajadas, data = datos_entrenamiento)
@@ -193,6 +290,7 @@ stargazer(modelo_sin_controles, modelo_con_controles, type = "text", title = "Co
 ```
 
 # Validación Cruzada (5-fold)
+
 ```{r validacion_cruzada, include=FALSE}
 train_control <- trainControl(method = "cv", number = 5)
 modelo_cv <- train(ln_Salario_hora ~ edad + I(edad^2), data = datos_entrenamiento, method = "lm", trControl = train_control)
@@ -200,6 +298,7 @@ print(modelo_cv)
 ```
 
 # Modelos Adicionales (Polinomiales e Interacciones)
+
 ```{r modelos_adicionales, include=FALSE}
 modelo4 <- lm(ln_Salario_hora ~ poly(edad, 3, raw = TRUE), data = datos_entrenamiento)
 modelo5 <- lm(ln_Salario_hora ~ hombre * edad, data = datos_entrenamiento)
@@ -219,6 +318,7 @@ rmse_m7 <- rmse(datos_prueba$ln_Salario_hora, datos_prueba$prediccion_m7)
 ```
 
 # Mostrar los resultados de RMSE para todos los modelos
+
 ```{r resultados_rmse, include=FALSE}
 cat("RMSE Modelo 1:", round(rmse_m1, 4), "\n")
 cat("RMSE Modelo 2:", round(rmse_m2, 4), "\n")
@@ -230,6 +330,7 @@ cat("RMSE Modelo 7:", round(rmse_m7, 4), "\n")
 ```
 
 # Comparación gráfica de los errores de predicción entre los modelos
+
 ```{r comparacion_grafica, include=FALSE}
 mse_values <- data.frame(
   Modelo = c("Modelo 1", "Modelo 2", "Modelo 3", "Modelo 4", "Modelo 5", "Modelo 6", "Modelo 7"),
