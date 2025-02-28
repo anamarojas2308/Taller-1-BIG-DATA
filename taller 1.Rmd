@@ -1,6 +1,6 @@
 ---
-title: "Primer Taller big data"
-authors: "Julian Delgado Gutierrez, Ana María Rojas, Juan David Rincón, Mario"
+title: "Taller_1_BDML"
+authors: "Julian Delgado Gutierrez, Ana María Rojas, Juan David Rincón, Mario Andrés Mercado"
 date: "2025-02-19"
 output: html_document
 ---
@@ -8,6 +8,26 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+# Problem Set 1: Predicting Income
+
+## Introduction
+
+In the public sector, accurate reporting of individual income is critical for computing taxes. However, tax fraud of all kinds has always been a significant issue. According to the Internal
+Revenue Service (IRS), about 83.6% of taxes are paid voluntarily and on time in the US.1. One of the causes of this gap is the under-reporting of incomes by individuals. An income predicting model could potentially assist in flagging cases of fraud that could lead to the reduction of the gap. Furthermore, an income prediction model can help identify vulnerable individuals and families that may need further assistance.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Configuración Inicial
 ```{r setup, include=FALSE}
