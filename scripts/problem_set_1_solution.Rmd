@@ -1,6 +1,6 @@
 ---
 title: "Taller_1"
-author: "group_2"
+author: "group_5"
 date: "2025-03-02"
 output: pdf_document
 editor_options: 
@@ -138,7 +138,9 @@ datos_filtrados <- datos_filtrados %>%
 # Codificación de variables de interés
 datos_filtrados <- datos_filtrados %>% 
   mutate(jefe = case_when(p6050 == "1" ~ 1,
-                          TRUE ~ 0))
+                          TRUE ~ 0),
+         mujer = case_when(hombre == "1" ~ 0,
+                           TRUE ~ 1))
 
 
 # Seleccionar unicamente la variable de Salario Hora, no ingresos
@@ -187,7 +189,7 @@ print(top_25_correlaciones)
 
 # Seleccionar variables importantes para el modelo 
 
-variables_seleccionadas <- c("edad", "clase", "hombre", "college", "depto", "escolaridad", "ocu", "dsi", "informal", "formal", "cuentapropia", "microEmpresa", "salario_hora", "ingtotes", "impa", "isa", "p6500", "p6510", "p6580", "p6750", "p7070", "cotPension", "p6920", "hoursWorkUsual", "hoursWorkActualSecondJob", "fex_c", "fweight", "oficio", "estrato1", "ln_salario_hora", "jefe")
+variables_seleccionadas <- c("edad", "clase", "hombre","mujer","college", "depto", "escolaridad", "ocu", "dsi", "informal", "formal", "cuentapropia", "microEmpresa", "salario_hora", "ingtotes", "impa", "isa", "p6500", "p6510", "p6580", "p6750", "p7070", "cotPension", "p6920", "hoursWorkUsual", "hoursWorkActualSecondJob", "fex_c", "fweight", "oficio", "estrato1", "ln_salario_hora", "jefe")
 
 base_seleccionada <- datos_filtrados %>% select(all_of(variables_seleccionadas))
 
@@ -362,34 +364,22 @@ not be included in the table but dutifully noted.
 
 
 
-```{r}
-# Training set and test set
-set.seed(10101)
-base_seleccionada$id <- 1:nrow(base_seleccionada)
-datos_entrenamiento <- base_seleccionada %>% sample_frac(0.7)
-datos_prueba <- base_seleccionada %>% anti_join(datos_entrenamiento, by = "id")
-
-cat("Tamaño del conjunto de entrenamiento:", nrow(datos_entrenamiento), "\n")
-cat("Tamaño del conjunto de prueba:", nrow(datos_prueba), "\n")
-
-```
 
 ```{r}
 # Modelo incondicional
-datos_entrenamiento$hombre <- as.numeric(as.character(datos_entrenamiento$hombre))
-modelo_incondicional <- lm(ln_salario_hora ~ hombre, data = datos_entrenamiento)
+modelo_incondicional <- lm(ln_salario_hora ~ mujer, data = base_seleccionada)
 summary(modelo_incondicional)
 stargazer(modelo_incondicional, type = "text")
 ```
 
 ```{r}
 # Variables de control, modelo condicional
-controles <- lm(ln_salario_hora ~ hombre + escolaridad + edad + I(edad^2) + cuentapropia + jefe + formal + ocu, data = datos_entrenamiento)
+controles <- lm(ln_salario_hora ~ mujer + escolaridad + edad + I(edad^2) + cuentapropia + jefe + formal + ocu, data = base_seleccionada)
 summary(controles)
 stargazer(controles, type = "text")
 residuos_salario <- residuals(controles)
 
-controles_genero <- lm(hombre ~ escolaridad + edad + I(edad^2) + cuentapropia + jefe + formal + ocu, data = datos_entrenamiento)
+controles_genero <- lm(mujer ~ escolaridad + edad + I(edad^2) + cuentapropia + jefe + formal + ocu, data = base_seleccionada)
 residuos_genero <- residuals(controles_genero)
 
 # Modelo FWL
@@ -401,10 +391,10 @@ summary(modelo_fwl)
 # Bootstrap para FWL
 fwl_bootstrap <- function(data, indices) {
   datos_boot <- data[indices, ]
-  controles <- lm(ln_salario_hora ~ hombre + escolaridad + edad + I(edad^2) + cuentapropia + jefe + formal + ocu, data = datos_boot)
+  controles <- lm(ln_salario_hora ~ mujer + escolaridad + edad + I(edad^2) + cuentapropia + jefe + formal + ocu, data = datos_boot)
   residuos_salario <- residuals(controles)
   
-  controles_genero <- lm(hombre ~ escolaridad + edad + I(edad^2) + cuentapropia + jefe + formal + ocu, data = datos_boot)
+  controles_genero <- lm(mujer ~ escolaridad + edad + I(edad^2) + cuentapropia + jefe + formal + ocu, data = datos_boot)
   residuos_genero <- residuals(controles_genero)
   
   modelo <- lm(residuos_salario ~ residuos_genero)
@@ -412,19 +402,20 @@ fwl_bootstrap <- function(data, indices) {
 }
 
 # Aplicar bootstrap
-resultados_bootstrap <- boot(data = datos_entrenamiento, statistic = fwl_bootstrap, R = 1000)
+resultados_bootstrap <- boot(data = base_seleccionada, statistic = fwl_bootstrap, R = 1000)
 summary(resultados_bootstrap)
 ```
 
 
 ```{r}
 stargazer(modelo_incondicional, controles, type = "text", omit = c("escolaridad", "edad", "cuentapropia", "jefe", "formal", "I(edad2)", "ocu"))
+
 ```
 
 
 ```{r}
 # Modelo polinómico para edad
-modelo_edad <- lm(ln_salario_hora ~ edad + I(edad^2) + hombre, data = datos_entrenamiento)
+modelo_edad <- lm(ln_salario_hora ~ edad + I(edad^2) + mujer, data = base_seleccionada)
 summary(modelo_edad)
 
 # Edad "punta"
@@ -432,13 +423,11 @@ edad_punta <- -coef(modelo_edad)["Edad"] / (2 * coef(modelo_edad)["I(Edad^2)"])
 intervalo_confianza <- confint(modelo_edad)
 
 # Gráfico edad-salario
-ggplot(datos_entrenamiento, aes(x = edad, y = ln_salario_hora, color = hombre)) +
+ggplot(base_seleccionada, aes(x = edad, y = ln_salario_hora, color = mujer)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = TRUE) +
   labs(title = "Perfil Edad-Salario", x = "Edad", y = "Salario")
 ```
-
-
 
 5.*Predicting earnings.* In the previous sections, you estimated some specifications with
 inference in mind. In this subsection, we will evaluate the predictive power of these
