@@ -188,7 +188,7 @@ closeAllConnections()
 
 # Cargar librerías necesarias
 load.lib <- c('data.table', 'dplyr', 'ggplot2', 'stargazer', 'tidyverse', 'lubridate',
-'plotly', 'rvest', 'tm', 'wordcloud', 'caret', 'boot', 'pacman')
+'plotly', 'rvest', 'tm', 'wordcloud', 'caret', 'boot', 'pacman','skimr')
 
 install.lib <- load.lib[!load.lib %in% installed.packages()]
 for(lib in install.lib) install.packages(lib)
