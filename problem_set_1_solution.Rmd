@@ -104,8 +104,6 @@ head(datos_totales)
 datos_totales <- write.csv(datos_totales, "datos_totales.csv")
 
 # Importar el dataset-GEIH 2018
-library(readr)
-library(tidyverse)
 datos_totales <- read_csv("datos_totales.csv")
 
 ```
@@ -193,7 +191,6 @@ variables_seleccionadas <- c("edad", "clase", "hombre", "college", "depto", "esc
 
 base_seleccionada <- datos_filtrados %>% select(all_of(variables_seleccionadas))
 
-library(skimr)
 skim(base_seleccionada) 
 
 miss_values <- skim(base_seleccionada) %>% select( skim_variable, n_missing)
