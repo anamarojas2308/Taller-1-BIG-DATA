@@ -449,130 +449,184 @@ explore non-linearities and complexity.
 (LOOCV). Compare the results of the test error with those obtained with the
 validation set approach and explore the potential links with the influence statistic. (Note: when attempting this subsection, the calculati
 
+#5.A
+
 ```{r}
 set.seed(10101)
-datos_filtrados$id <- 1:nrow(datos_filtrados)
-datos_entrenamiento <- datos_filtrados %>% sample_frac(0.7)
-datos_prueba <- datos_filtrados %>% anti_join(datos_entrenamiento, by = "id")
+base_seleccionada$id <- 1:nrow(base_seleccionada)
+datos_entrenamiento <- base_seleccionada %>% sample_frac(0.7)
+datos_prueba <- base_seleccionada %>% anti_join(datos_entrenamiento, by = "id")
 
 cat("Tamaño del conjunto de entrenamiento:", nrow(datos_entrenamiento), "\n")
 cat("Tamaño del conjunto de prueba:", nrow(datos_prueba), "\n")
 
-
-
+```
+#5B
+```{r}
 # Modelos de Regresión
 
-## Modelo 1: Constante
+## Modelo 1: 
 
-modelo1 <- lm(ln_salario_hora ~ 1, data = datos_entrenamiento)
+modelo1 <- lm(ln_salario_hora ~ edad + I(edad^2), data = datos_entrenamiento)
 summary(modelo1)
 
-## Modelo 2: Edad y Edad\^2
+## Modelo 2: 
 
-modelo2 <- lm(ln_salario_hora ~ edad + I(edad^2), data = datos_entrenamiento)
+modelo2 <- lm(ln_salario_hora ~ mujer + edad, data = datos_entrenamiento)
 summary(modelo2)
 
-## Modelo 3: Género y Edad
+```
 
-modelo3 <- lm(ln_salario_hora ~ hombre + edad, data = datos_entrenamiento)
-summary(modelo3)
+```{r}
+# Modelos adicionales para Modelo 1
+modelo1_1 <- lm(ln_salario_hora ~ edad + I(edad^2) + I(edad^3), data = datos_entrenamiento)
+modelo1_2 <- lm(ln_salario_hora ~ edad + I(edad^2) + mujer, data = datos_entrenamiento)
+modelo1_3 <- lm(ln_salario_hora ~ edad * I(edad^2), data = datos_entrenamiento)
+modelo1_4 <- lm(ln_salario_hora ~ poly(edad, 3), data = datos_entrenamiento)
+modelo1_5 <- lm(ln_salario_hora ~ edad + I(edad^2) + edad:mujer, data = datos_entrenamiento)
 
-# Evaluación de Modelos (RMSE)
-rmse <- function(actual, predicho) {
-  sqrt(mean((actual - predicho)^2))
+# Modelos adicionales para Modelo 2
+modelo2_1 <- lm(ln_salario_hora ~ mujer + edad + I(edad^2), data = datos_entrenamiento)
+modelo2_2 <- lm(ln_salario_hora ~ mujer * edad, data = datos_entrenamiento)
+modelo2_3 <- lm(ln_salario_hora ~ mujer + poly(edad, 3), data = datos_entrenamiento)
+modelo2_4 <- lm(ln_salario_hora ~ mujer + edad + I(edad^2) + edad:mujer, data = datos_entrenamiento)
+modelo2_5 <- lm(ln_salario_hora ~ mujer + poly(edad, 4), data = datos_entrenamiento)
+
+```
+
+```{r}
+# Función para calcular el RMSE
+calcular_rmse <- function(modelo, datos_prueba) {
+  predicciones <- predict(modelo, newdata = datos_prueba)
+  sqrt(mean((datos_prueba$ln_salario_hora - predicciones)^2))
 }
 
-datos_prueba$prediccion_m1 <- predict(modelo1, newdata = datos_prueba)
-datos_prueba$prediccion_m2 <- predict(modelo2, newdata = datos_prueba)
-datos_prueba$prediccion_m3 <- predict(modelo3, newdata = datos_prueba)
-
-rmse_m1 <- rmse(datos_prueba$ln_salario_hora, datos_prueba$prediccion_m1)
-rmse_m2 <- rmse(datos_prueba$ln_salario_hora, datos_prueba$prediccion_m2)
-rmse_m3 <- rmse(datos_prueba$ln_salario_hora, datos_prueba$prediccion_m3)
-
-cat("RMSE Modelo 1:", round(rmse_m1, 4), "\n")
-cat("RMSE Modelo 2:", round(rmse_m2, 4), "\n")
-cat("RMSE Modelo 3:", round(rmse_m3, 4), "\n")
-
-
-# Intervalos de Confianza mediante Bootstrap
-# Función para bootstrap del coeficiente de edad
-boot_fn <- function(data, indices) {
-  modelo_boot <- lm(ln_salario_hora ~ edad + I(edad^2), data = data[indices, ])
-  return(coef(modelo_boot))
-}
-
-boot_results <- boot(datos_entrenamiento, boot_fn, R = 1000)
-
-# Intervalo de confianza al 95% para el coeficiente de edad
-boot.ci(boot_results, type = "perc", index = 2)
-
-# Visualización de la Curva de Edad-Ingreso
-edad_seq <- data.frame(edad = seq(min(datos_entrenamiento$edad), max(datos_entrenamiento$edad), by = 1))
-edad_seq$ln_salario_hora_pred <- predict(modelo2, newdata = edad_seq)
-
-curv_edad_salario <- ggplot(datos_entrenamiento, aes(x = edad, y = ln_salario_hora)) +
-  geom_point(alpha = 0.3) +
-  geom_line(data = edad_seq, aes(x = edad, y = ln_salario_hora_pred), color = "blue") +
-  labs(title = "Curva de Edad vs. Log Salario Hora",
-       x = "Edad", y = "Log Salario Hora")
-
-print(curv_edad_salario)
-
-# Comparación entre Modelos Condicionales y No Condicionales
-
-modelo_sin_controles <- lm(ln_salario_hora ~ hombre, data = datos_entrenamiento)
-modelo_con_controles <- lm(ln_salario_hora ~ hombre + edad + T_horas_trabajadas, data = datos_entrenamiento)
-
-stargazer(modelo_sin_controles, modelo_con_controles, type = "text", title = "Comparación de Modelos")
-
-# Validación Cruzada (5-fold)
-
-train_control <- trainControl(method = "cv", number = 5)
-modelo_cv <- train(ln_salario_hora ~ edad + I(edad^2), data = datos_entrenamiento, method = "lm", trControl = train_control)
-print(modelo_cv)
-
-# Modelos Adicionales (Polinomiales e Interacciones)
-modelo4 <- lm(ln_salario_hora ~ poly(edad, 3, raw = TRUE), data = datos_entrenamiento)
-modelo5 <- lm(ln_salario_hora ~ hombre * edad, data = datos_entrenamiento)
-modelo6 <- lm(ln_salario_hora ~ hombre + edad + I(edad^2) + t_horas_trabajadas, data = datos_entrenamiento)
-modelo7 <- lm(ln_salario_hora ~ poly(edad, 2) + log(t_horas_trabajadas), data = datos_entrenamiento)
-
-# Predicciones y RMSE para los nuevos modelos
-datos_prueba$prediccion_m4 <- predict(modelo4, newdata = datos_prueba)
-datos_prueba$prediccion_m5 <- predict(modelo5, newdata = datos_prueba)
-datos_prueba$prediccion_m6 <- predict(modelo6, newdata = datos_prueba)
-datos_prueba$prediccion_m7 <- predict(modelo7, newdata = datos_prueba)
-
-rmse_m4 <- rmse(datos_prueba$ln_salario_hora, datos_prueba$prediccion_m4)
-rmse_m5 <- rmse(datos_prueba$ln_salario_hora, datos_prueba$prediccion_m5)
-rmse_m6 <- rmse(datos_prueba$ln_salario_hora, datos_prueba$prediccion_m6)
-rmse_m7 <- rmse(datos_prueba$ln_salario_hora, datos_prueba$prediccion_m7)
-
-# Mostrar los resultados de RMSE para todos los modelos
-
-cat("RMSE Modelo 1:", round(rmse_m1, 4), "\n")
-cat("RMSE Modelo 2:", round(rmse_m2, 4), "\n")
-cat("RMSE Modelo 3:", round(rmse_m3, 4), "\n")
-cat("RMSE Modelo 4:", round(rmse_m4, 4), "\n")
-cat("RMSE Modelo 5:", round(rmse_m5, 4), "\n")
-cat("RMSE Modelo 6:", round(rmse_m6, 4), "\n")
-cat("RMSE Modelo 7:", round(rmse_m7, 4), "\n")
-
-# Comparación gráfica de los errores de predicción entre los modelos
-
-mse_values <- data.frame(
-  Modelo = c("Modelo 1", "Modelo 2", "Modelo 3", "Modelo 4", "Modelo 5", "Modelo 6", "Modelo 7"),
-  RMSE = c(rmse_m1, rmse_m2, rmse_m3, rmse_m4, rmse_m5, rmse_m6, rmse_m7)
+# Lista de modelos
+modelos <- list(
+  "Modelo 1" = modelo1, "Modelo 1.1" = modelo1_1, "Modelo 1.2" = modelo1_2,
+  "Modelo 1.3" = modelo1_3, "Modelo 1.4" = modelo1_4, "Modelo 1.5" = modelo1_5,
+  "Modelo 2" = modelo2, "Modelo 2.1" = modelo2_1, "Modelo 2.2" = modelo2_2,
+  "Modelo 2.3" = modelo2_3, "Modelo 2.4" = modelo2_4, "Modelo 2.5" = modelo2_5
 )
 
-# Visualizar los RMSE en un gráfico de barras
+# Calcular RMSE
+resultados_rmse <- lapply(modelos, calcular_rmse, datos_prueba = datos_prueba)
 
-RMSE_barras <- ggplot(mse_values, aes(x = Modelo, y = RMSE, fill = Modelo)) +
-  geom_bar(stat = "identity", show.legend = FALSE) +
-  labs(title = "Comparación de RMSE entre Modelos",
-       x = "Modelo", y = "RMSE") +
-  theme_minimal()
+# Convertir a data frame ordenado
+rmse_df <- data.frame(
+  Modelo = names(resultados_rmse),
+  RMSE = unlist(resultados_rmse)
+) %>% arrange(RMSE)
 
-print(RMSE_barras)
+# Tabla de RMSE
+cat("\nComparación de RMSE entre Modelos\n")
+cat("=================================\n")
+cat(sprintf("%-20s %10s\n", "Modelo", "RMSE"))
+cat("---------------------------------\n")
+for (i in 1:nrow(rmse_df)) {
+  cat(sprintf("%-20s %10.3f\n", rmse_df$Modelo[i], rmse_df$RMSE[i]))
+}
+cat("---------------------------------\n")
 ```
+
+#5C
+
+```{r}
+# Seleccionar el modelo con el menor RMSE
+mejor_modelo <- modelo2_5
+
+# Predecir valores y calcular errores en el set de prueba
+datos_prueba$predicciones <- predict(mejor_modelo, newdata = datos_prueba)
+datos_prueba$error <- datos_prueba$ln_salario_hora - datos_prueba$predicciones
+
+# Visualizar la distribución de los errores
+library(ggplot2)
+ggplot(datos_prueba, aes(x = error)) +
+  geom_histogram(binwidth = 0.1, fill = "skyblue", color = "black") +
+  labs(title = "Distribución de Errores de Predicción", x = "Error", y = "Frecuencia")
+
+# Identificar outliers (percentiles 1% y 99%)
+percentiles <- quantile(datos_prueba$error, probs = c(0.01, 0.99))
+outliers <- datos_prueba %>%
+  filter(error < percentiles[1] | error > percentiles[2])
+
+# Mostrar las observaciones atípicas (outliers)
+print(outliers)
+
+# Resumen de los errores
+summary(datos_prueba$error)
+
+# Visualizar outliers con un gráfico
+ggplot(outliers, aes(x = edad, y = ln_salario_hora, color = mujer)) +
+  geom_point(size = 3) +
+  labs(title = "Outliers: Edad vs Salario (log)", x = "Edad", y = "ln(Salario por hora)")
+```
+i. Desempeño de los modelos:
+En general, los modelos presentan un desempeño relativamente bueno, con RMSE que oscilan entre 0.626 y 0.634. Dado que ahora solo usamos las variables edad y género (mujer), la capacidad predictiva ha sido más conservadora en comparación con los modelos anteriores, lo que sugiere que la eliminación de variables como escolaridad ha reducido la complejidad del modelo, pero también su precisión.
+
+ii. Modelos con mejor desempeño:
+El modelo con el menor RMSE es el Modelo 2.5 (0.626), seguido muy de cerca por el Modelo 2.3 (0.627).
+Estos modelos incluyen combinaciones no lineales de edad (como su cuadrado) e interacciones con género.
+Esto reafirma que, aunque las variables predictivas son limitadas, la inclusión de términos no lineales sigue aportando valor, al capturar relaciones complejas entre edad y salario.
+
+iii. Distribución de errores:
+La distribución de los errores de predicción muestra una forma aproximadamente normal, con una fuerte concentración alrededor de 0. Esto indica que, en general, los modelos tienden a predecir los salarios con una precisión razonable, sin sesgo sistemático claro.
+
+iv. Asimetría positiva:
+Hay una asimetría positiva evidente, con valores más alejados hacia la derecha. Esto sugiere que algunos salarios fueron significativamente subestimados por los modelos, lo cual podría reflejar que existen individuos con ingresos muy altos que las variables edad y género no logran explicar adecuadamente.
+
+v. Outliers:
+El análisis de outliers (percentiles 1% y 99%) revela que hay observaciones extremas con errores considerables. Estos outliers podrían estar relacionados con personas que reciben salarios inusualmente bajos o altos, potencialmente debido a factores no contemplados por los modelos, como la ocupación, el nivel educativo o experiencia laboral.
+
+vi. Reflexión sobre observaciones extremas:
+Aunque no se puede afirmar con certeza si estas observaciones extremas representan errores en la recolección de datos o casos legítimos que escapan a las capacidades explicativas de los modelos, queda claro que hay limitaciones al usar solo edad y género.
+Para mejorar las predicciones, sería útil explorar modelos más complejos que incluyan otras variables relevantes o considerar técnicas más robustas para mitigar la influencia de outliers.
+
+
+#5D
+```{r}
+ctrl <- trainControl(method = "LOOCV")
+
+# Modelo 2.5
+modelo_2_5 <- train(ln_salario_hora ~ edad * mujer + I(edad^2), 
+                    data = base_seleccionada, 
+                    method = "lm", 
+                    trControl = ctrl)
+
+# Modelo 2.3
+modelo_2_3 <- train(ln_salario_hora ~ edad + mujer + I(edad^2), 
+                    data = base_seleccionada, 
+                    method = "lm", 
+                    trControl = ctrl)
+
+# RMSE de cada modelo (LOOCV)
+rmse_loocv_2_5 <- modelo_2_5$results$RMSE
+rmse_loocv_2_3 <- modelo_2_3$results$RMSE
+
+# Resultados
+cat("RMSE LOOCV para el Modelo 2.5:", rmse_loocv_2_5, "\n")
+cat("RMSE LOOCV para el Modelo 2.3:", rmse_loocv_2_3, "\n")
+```
+Tras el análisis realizado, se obtuvieron los siguientes resultados en cuanto al desempeño predictivo de los modelos estimados:
+
+Desempeño en el conjunto de validación:
+
+El Modelo 2.5 presentó el menor RMSE, con un valor de 0.626.
+
+El Modelo 2.3 le siguió de cerca, con un RMSE de 0.627.
+
+Desempeño con validación cruzada (LOOCV):
+
+El RMSE LOOCV para el Modelo 2.5 fue de 0.6331.
+
+El RMSE LOOCV para el Modelo 2.3 fue de 0.6340.
+
+Ambos modelos incluyen combinaciones no lineales de la variable edad, como su término cuadrático, y consideran las interacciones con el género (mujer), lo que permite capturar relaciones complejas entre estas variables y el salario por hora.
+
+A pesar de que el Modelo 2.5 obtuvo el menor RMSE tanto en validación como en LOOCV, la diferencia con el Modelo 2.3 es marginal. Esto sugiere que ambos modelos tienen un desempeño muy similar y que las mejoras adicionales logradas por el Modelo 2.5 son leves, aunque consistentes.
+
+El hecho de que las puntuaciones de RMSE en validación y LOOCV no difieran significativamente indica que los modelos no están sobreajustados y que su capacidad predictiva es relativamente estable al enfrentarse a nuevos datos.
+
+Sin embargo, es importante destacar que, dado que solo se utilizaron las variables edad y género, las predicciones aún presentan limitaciones. La presencia de outliers y la asimetría positiva en los errores sugieren que hay factores adicionales —como la escolaridad, la ocupación o la experiencia laboral— que no fueron considerados y que podrían ayudar a mejorar el poder explicativo de los modelos.
+
+En conclusión, el Modelo 2.5 se posiciona como el mejor modelo predictivo dentro de los estimados, aunque el Modelo 2.3 ofrece resultados muy similares. Para futuras investigaciones, se recomienda explorar la inclusión de nuevas variables y el uso de técnicas más avanzadas para robustecer las predicciones.
