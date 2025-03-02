@@ -20,11 +20,13 @@ closeAllConnections()
 
 ```{r}
 # Cargar librerías necesarias
-load.lib <- c('data.table', 'stargazer', 'tidyverse', 'lubridate', 'boot'
-              'plotly', 'rvest', 'tm', 'wordcloud', 'caret', 'boot', 'pacman', 'skimr')
+load.lib <- c('data.table', 'dplyr', 'ggplot2', 'stargazer', 'tidyverse', 'lubridate',
+'plotly', 'rvest', 'tm', 'wordcloud', 'caret', 'boot', 'pacman','skimr')
+
 install.lib <- load.lib[!load.lib %in% installed.packages()]
 for(lib in install.lib) install.packages(lib)
 sapply(load.lib, require, character = TRUE)
+
 print("Librerías cargadas correctamente")
 
 ```
