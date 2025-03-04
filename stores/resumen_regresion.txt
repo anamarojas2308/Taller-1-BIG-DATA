@@ -1,0 +1,20 @@
+
+Call:
+lm(formula = ln_Salario_hora ~ edad + edad_cuadrado, data = base_seleccionada)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-1.6512 -0.4258 -0.1719  0.2709  2.6865 
+
+Coefficients:
+                Estimate Std. Error t value Pr(>|t|)    
+(Intercept)    7.529e+00  6.798e-02  110.75   <2e-16 ***
+edad           5.382e-02  3.603e-03   14.94   <2e-16 ***
+edad_cuadrado -5.891e-04  4.446e-05  -13.25   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.6357 on 8454 degrees of freedom
+Multiple R-squared:  0.03515,	Adjusted R-squared:  0.03492 
+F-statistic:   154 on 2 and 8454 DF,  p-value: < 2.2e-16
+
