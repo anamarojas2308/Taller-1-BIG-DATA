@@ -32,7 +32,3 @@ Datos obtenidos de: [https://ignaciomsarmiento.github.io/GEIH2018-sample/](https
 *   Julian Delgado
 *   Ana María Rojas
 *   Juan David Rincón
-
-## Licencia
-
-Este proyecto se distribuye bajo la licencia [MIT/GPL/Otra].
