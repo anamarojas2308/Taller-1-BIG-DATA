@@ -7,7 +7,7 @@ Este proyecto busca entender y predecir el ingreso por hora en Bogotá, utilizan
 ## Contenido del Repositorio
 
 *   **document/**: Informe final en PDF con análisis, resultados y conclusiones.
-*   **scripts/**: Scripts de Python para la adquisición, limpieza, análisis y modelado de datos.
+*   **scripts/**: Scripts de R para la adquisición, limpieza, análisis y modelado de datos.
 *   **stores/**: Conjuntos de datos utilizados. Si los archivos son grandes, se incluyen instrucciones de acceso.
 *   **views/**: Gráficos, tablas y visualizaciones generadas durante el análisis.
 
