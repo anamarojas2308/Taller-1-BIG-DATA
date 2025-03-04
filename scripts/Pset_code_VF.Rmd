@@ -866,15 +866,3 @@ explorar la inclusión de nuevas variables y el uso de técnicas más
 avanzadas para robustecer las predicciones.
 
 ```
-
-Rendimiento General de los Modelos:
-
-El análisis comparativo de los modelos de regresión revela que, en general, el rendimiento predictivo es modesto, como lo indican los bajos valores de R-cuadrado y los RMSE relativamente altos. Esto sugiere que la variabilidad en el logaritmo del salario por hora no se explica completamente por las variables incluidas en los modelos. A pesar de esto, se observa una mejora en el ajuste cuando se incorporan la edad y su término cuadrático, lo que destaca la importancia de considerar la no linealidad en la relación entre la edad y el salario. El modelo 6, en particular, presenta el menor error de predicción (RMSE de 0.6173), indicando un mejor rendimiento en comparación con las otras especificaciones. Además, el modelo que incluye las horas trabajadas, el género y la edad muestra el mejor ajuste a los datos de entrenamiento, lo que sugiere que estas variables son relevantes para predecir el salario por hora.
-
-Especificación con el Menor Error de Predicción:
-
-El modelo 6 se destaca por tener el menor error de predicción (RMSE de 0.6173) entre todas las especificaciones evaluadas. Sin embargo, para proporcionar un análisis más detallado de este modelo, sería necesario conocer las variables específicas que lo componen. El modelo que mejor se ajusta a los datos de entrenamiento es aquel que incluye las horas trabajadas, el género y la edad, lo que sugiere que estas variables son determinantes importantes del salario por hora.
-
-Exploración de Observaciones con Errores de Predicción Significativos:
-
-Para el modelo con el menor error de predicción (Modelo 6), se propone calcular los errores de predicción en el conjunto de prueba y examinar su distribución. Identificar las observaciones con errores grandes, tanto positivos como negativos, permitirá analizar sus características y determinar si representan outliers genuinos o errores del modelo. Los outliers podrían ser de interés para la DIAN si representan individuos con ingresos atípicos y bajos impuestos declarados, aunque también podrían ser producto de las limitaciones del modelo. Se recomienda realizar un análisis más profundo de las variables del Modelo 6 y considerar la inclusión de variables adicionales para mejorar la precisión predictiva.
