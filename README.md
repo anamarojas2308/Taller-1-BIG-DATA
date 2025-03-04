@@ -13,9 +13,9 @@ Este proyecto busca entender y predecir el ingreso por hora en Bogotá, utilizan
 
 ## Análisis Clave
 
-*   Perfil de ingreso por edad (regresión polinómica).
-*   Brecha salarial de género (regresión lineal con variables de control).
-*   Predicción de ingresos y evaluación del modelo (RMSE, validación cruzada).
+*   Perfil de ingreso por edad.
+*   Brecha salarial de género (incondicional y condicional).
+*   Predicción de ingresos y evaluación del modelo (RMSE, validación cruzada LOOCV).
 
 ## Uso del Repositorio
 
@@ -32,3 +32,7 @@ Datos obtenidos de: [https://ignaciomsarmiento.github.io/GEIH2018-sample/](https
 *   Julian Delgado
 *   Ana María Rojas
 *   Juan David Rincón
+
+## Licencia
+
+Este proyecto se distribuye bajo la licencia [MIT/GPL/Otra].
